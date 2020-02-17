@@ -2,29 +2,23 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class CreateBookDto {
+export class CreateAuthorDto {
   @ApiProperty({
     type: String,
   })
   @IsString()
-  title: string;
+  firstName: string;
 
   @ApiProperty({
     type: String,
   })
   @IsString()
-  iban: string;
+  lastName: string;
 
   @ApiProperty({
     type: Date,
   })
   @IsDate()
   @Type(() => Date)
-  publishedAt: Date;
-
-  @ApiProperty({
-    type: [String],
-    minItems: 1,
-  })
-  authors: string[];
+  birthday: Date;
 }

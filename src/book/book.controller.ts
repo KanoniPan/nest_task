@@ -1,16 +1,22 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put } from '@nestjs/common';
-import {ApiTags} from '@nestjs/swagger';
-import { BookService } from "./book.service";
-import { Book } from "./book.entity";
-import { CreateBookDto } from "./dto/create-book.dto";
-import { UpdateBookDto } from "./dto/update-book.dto";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { BookService } from './book.service';
+import { Book } from './book.entity';
+import { CreateBookDto } from './dto/create-book.dto';
+import { UpdateBookDto } from './dto/update-book.dto';
 
-// TODO: - rename crud into author
 @ApiTags('books')
 @Controller('books')
 export class BookController {
-  constructor(private readonly bookService: BookService) {
-  }
+  constructor(private readonly bookService: BookService) {}
 
   @Get()
   findAll(): Promise<Book[]> {
@@ -26,7 +32,6 @@ export class BookController {
   create(@Body() createBookDto: CreateBookDto) {
     return this.bookService.create(createBookDto);
   }
-
 
   @Delete(':id')
   remove(@Param('id') id: string): Promise<void> {

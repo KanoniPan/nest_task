@@ -1,25 +1,25 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsString, IsOptional } from "class-validator";
-import { Type } from "class-transformer";
+import { IsDate, IsString, IsOptional } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ObjectID } from 'typeorm';
 
 export class UpdateBookDto {
   @ApiProperty({
-    type: String
+    type: String,
   })
   @IsString()
   @IsOptional()
   title: string;
 
   @ApiProperty({
-    type: String
+    type: String,
   })
   @IsString()
   @IsOptional()
   iban: string;
 
   @ApiProperty({
-    type: Date
+    type: Date,
   })
   @IsDate()
   @Type(() => Date)
@@ -28,9 +28,8 @@ export class UpdateBookDto {
 
   @ApiProperty({
     type: [String],
-    minItems: 1
+    minItems: 1,
   })
   @IsOptional()
-  authors: string[];
-
+  authors: ObjectID[];
 }

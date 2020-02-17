@@ -2,13 +2,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinTable,
-  ManyToMany,
   ObjectID,
   ObjectIdColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from 'typeorm';
-import { Book } from "../book/book.entity";
 
 @Entity()
 export class Author {
@@ -31,7 +28,7 @@ export class Author {
   updatedAt: Date;
 
   @Column({
-    default: []
+    default: [],
   })
   books: ObjectID[];
 }

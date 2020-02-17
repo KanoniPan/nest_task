@@ -2,13 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  ManyToMany,
   ObjectID,
   ObjectIdColumn,
   UpdateDateColumn,
-  ManyToOne
 } from 'typeorm';
-import { Max, Min } from "class-validator";
+import { Max, Min } from 'class-validator';
 
 @Entity()
 export class Book {
@@ -31,7 +29,7 @@ export class Book {
 
   @UpdateDateColumn()
   updatedAt: Date;
-  
+
   @Column()
   authors: ObjectID[];
 }
