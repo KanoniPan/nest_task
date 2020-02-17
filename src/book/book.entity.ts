@@ -2,36 +2,36 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  JoinTable,
   ManyToMany,
   ObjectID,
   ObjectIdColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
+  ManyToOne
 } from 'typeorm';
-import { Book } from "../book/book.entity";
+import { Max, Min } from "class-validator";
 
 @Entity()
-export class Author {
+export class Book {
   @ObjectIdColumn()
   id: ObjectID;
 
   @Column()
-  firstName: string;
+  title: string;
+
+  @Min(16)
+  @Max(34)
+  @Column()
+  iban: string;
 
   @Column()
-  lastName: string;
-
-  @Column()
-  birthday: Date;
+  publishedAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  @Column({
-    default: []
-  })
-  books: ObjectID[];
+  
+  @Column()
+  authors: ObjectID[];
 }

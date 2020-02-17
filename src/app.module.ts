@@ -2,6 +2,10 @@ import { Module } from '@nestjs/common';
 import {Author} from "./crud/crud.entity";
 import {TypeOrmModule} from "@nestjs/typeorm";
 import {AuthorModule} from "./crud/crud.module";
+import {APP_FILTER} from "@nestjs/core";
+import {HttpExceptionFilter} from "./common/http-exception.filter";
+import { Book } from "./book/book.entity";
+import { BookModule } from "./book/book.module";
 
 @Module({
   imports: [
@@ -9,10 +13,17 @@ import {AuthorModule} from "./crud/crud.module";
       type: 'mongodb',
       host: 'localhost',
       database: 'my_crud',
-      entities: [Author],
-      synchronize: true,
+      entities: [Author, Book],
+      synchronize: false,
     }),
     AuthorModule,
+    BookModule
   ],
+  providers: [
+    {
+      provide: APP_FILTER,
+      useClass: HttpExceptionFilter,
+    },
+  ]
 })
 export class AppModule {}
