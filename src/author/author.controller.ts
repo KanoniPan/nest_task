@@ -42,7 +42,10 @@ export class AuthorController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() authorData: UpdateAuthorDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() authorData: UpdateAuthorDto,
+  ): Promise<void> {
     return this.authorService.update(id, authorData);
   }
 }
