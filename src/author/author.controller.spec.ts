@@ -10,8 +10,15 @@ import { Book } from '../book/book.entity';
 describe('AuthorController', () => {
   let authorController: AuthorController;
   let authorService: AuthorService;
-  let authorRepository: Repository<Author>;
-  let bookRepository: Repository<Book>;
+  const author = {
+    id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
+    firstName: 'string',
+    lastName: 'string',
+    birthday: new Date(),
+    books: [new ObjectID('5e4be36c48962b7312b2118d')],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       controllers: [AuthorController],
@@ -27,10 +34,6 @@ describe('AuthorController', () => {
         },
       ],
     }).compile();
-    authorRepository = moduleRef.get<Repository<Author>>(
-      getRepositoryToken(Author),
-    );
-    bookRepository = moduleRef.get<Repository<Book>>(getRepositoryToken(Book));
 
     authorService = moduleRef.get<AuthorService>(AuthorService);
     authorController = moduleRef.get<AuthorController>(AuthorController);
@@ -38,7 +41,7 @@ describe('AuthorController', () => {
 
   describe('findAll', () => {
     it('should return an array of authors', async () => {
-      const result = [
+      const authors = [
         {
           id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
           firstName: 'string',
@@ -51,10 +54,9 @@ describe('AuthorController', () => {
       ];
       jest
         .spyOn(authorService, 'findAll')
-        .mockImplementation(async () => await result);
-      // const res = classToPlain(result);
+        .mockImplementation(async () => await authors);
 
-      const res = result[0];
+      const res = authors[0];
 
       res.books[0] = res.books[0].toString();
       res.id = res.id.toString();
@@ -65,51 +67,30 @@ describe('AuthorController', () => {
 
   describe('findOne', () => {
     it('should return an author', async () => {
-      const result = {
-        id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
-        firstName: 'string',
-        lastName: 'string',
-        birthday: new Date(),
-        books: [new ObjectID('5e4be36c48962b7312b2118d')],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
       jest
         .spyOn(authorService, 'findOne')
-        .mockImplementation(async () => await result);
-      // const res = classToPlain(result);
+        .mockImplementation(async () => await author);
+      // const res = classToPlain(author);
 
-      result.books = result.books[0].toString();
-      result.id = result.id.toString();
+      author.books = author.books[0].toString();
+      author.id = author.id.toString();
       const expected = await authorController.findOne(
         '5e4bd5dc2a30bc700c8b7e9d',
       );
-      expect(JSON.stringify(expected)).toBe(JSON.stringify(result));
+      expect(JSON.stringify(expected)).toBe(JSON.stringify(author));
     });
   });
 
   describe('create', () => {
     it('should create an author', async () => {
-      const result = {
-        id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
-        firstName: 'string',
-        lastName: 'string',
-        birthday: new Date(),
-        books: [new ObjectID('5e4be36c48962b7312b2118d')],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
       jest
         .spyOn(authorService, 'create')
-        .mockImplementation(async () => await result);
-      // const res = classToPlain(result);
+        .mockImplementation(async () => await author);
 
-      result.books = result.books[0].toString();
-      result.id = result.id.toString();
-      const expected = await authorController.create(result);
-      expect(JSON.stringify(expected)).toBe(JSON.stringify(result));
+      author.books = author.books[0].toString();
+      author.id = author.id.toString();
+      const expected = await authorController.create(author);
+      expect(JSON.stringify(expected)).toBe(JSON.stringify(author));
     });
   });
 
@@ -126,21 +107,11 @@ describe('AuthorController', () => {
 
   describe('delete', () => {
     it('should update an author', async () => {
-      const result = {
-        id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
-        firstName: 'stringsss',
-        lastName: 'stringsss',
-        birthday: new Date(),
-        books: [new ObjectID('5e4be36c48962b7312b2118d')],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
       jest.spyOn(authorService, 'update').mockImplementation();
 
-      await authorController.update(result.id, result);
+      await authorController.update(author.id, author);
 
-      expect(authorService.update).toHaveBeenCalledWith(result.id, result);
+      expect(authorService.update).toHaveBeenCalledWith(author.id, author);
     });
   });
 });

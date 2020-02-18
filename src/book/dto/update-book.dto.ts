@@ -24,7 +24,7 @@ export class UpdateBookDto {
   @IsDate()
   @Type(() => Date)
   @IsOptional()
-  publishedAt: Date;
+  publishedAt: Date | string;
 
   @ApiProperty({
     type: [String],

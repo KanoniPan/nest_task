@@ -26,12 +26,14 @@ export class BookController {
     required: false,
     type: String,
   })
-  findAll(@Query('authorId') id?: string): Promise<Object | Book[]> {
+  findAll(
+    @Query('authorId') id?: string,
+  ): Promise<Record<string, any> | Book[]> {
     return this.bookService.findAll(id).then(it => classToPlain(it));
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<Object | Book> {
+  findOne(@Param('id') id: string): Promise<Record<string, any> | Book> {
     return this.bookService.findOne(id).then(it => classToPlain(it));
   }
 
@@ -46,7 +48,10 @@ export class BookController {
   }
 
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() bookData: UpdateBookDto) {
+  async update(
+    @Param('id') id: string,
+    @Body() bookData: UpdateBookDto,
+  ): Promise<void> {
     return this.bookService.update(id, bookData);
   }
 }
