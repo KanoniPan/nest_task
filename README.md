@@ -32,6 +32,6 @@ Then, run Nest as usual:
 
 `npm run lint`
 
-#Run nodemon
+# Run nodemon
 
 `npm run start:nodemon`
