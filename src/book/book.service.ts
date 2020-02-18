@@ -6,6 +6,7 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { Author } from '../author/author.entity';
 import { ObjectID } from 'mongodb';
 import { UpdateBookDto } from './dto/update-book.dto';
+import { validate } from 'class-validator';
 
 @Injectable()
 export class BookService {
@@ -16,7 +17,21 @@ export class BookService {
     private readonly authorRepository: Repository<Author>,
   ) {}
 
-  async findAll(): Promise<Book[]> {
+  async findAll(id?: string): Promise<Book[]> {
+    if (id) {
+      const author = await this.authorRepository.findOneOrFail(id).catch(() => {
+        throw new HttpException(
+          `Author with ${id} was not found`,
+          HttpStatus.NOT_FOUND,
+        );
+      });
+
+      const ids = author.books.map(it => new ObjectID(it));
+      const booksToReturn = await this.bookRepository.findByIds(ids);
+
+      return booksToReturn;
+    }
+
     return this.bookRepository.find();
   }
 
@@ -38,7 +53,17 @@ export class BookService {
     book.publishedAt = createBookDto.publishedAt;
     book.authors = authorsExists.map(it => it.id);
 
+    const errors = await validate(book);
+
+    if (errors.length > 0) {
+      throw new HttpException(
+        errors.map(it => it.constraints),
+        HttpStatus.NOT_FOUND,
+      );
+    }
+
     const bookToReturn = await this.bookRepository.save(book);
+    await this.updateAuthor(authorsExists, bookToReturn.id);
 
     for (const author of authorsExists) {
       const authorToUpdate = new Author();
@@ -48,71 +73,47 @@ export class BookService {
       const update = { ...author, ...authorToUpdate };
       await this.authorRepository.save(update);
     }
-
     return bookToReturn;
   }
 
   findOne(id: string): Promise<Book> {
-    return this.bookRepository.findOneOrFail(id).catch(() => {
-      throw new HttpException(
-        `Book with ${id} was not found`,
-        HttpStatus.NOT_FOUND,
-      );
-    });
+    return this.findBookOrFail(id);
   }
 
   async remove(id: string): Promise<void> {
-    const bookToRemove = await this.bookRepository
-      .findOneOrFail(id)
-      .catch(() => {
-        throw new HttpException(
-          `Book with ${id} was not found`,
-          HttpStatus.NOT_FOUND,
-        );
-      });
+    const bookToRemove = await this.findBookOrFail(id);
 
     const authorExists = await this.checkIfAuthorsExists(bookToRemove.authors);
     await this.deleteBooksFromAuthor(authorExists, bookToRemove.id);
     await this.bookRepository.delete(id);
   }
+
   // TODO: - rename differenceLeft, differenceRight
   async update(id: string, book: UpdateBookDto): Promise<void> {
-    const authorsExists = await this.checkIfAuthorsExists(book.authors);
+    await this.checkIfAuthorsExists(book.authors);
 
-    const toUpdate = await this.bookRepository.findOneOrFail(id).catch(() => {
-      throw new HttpException(
-        `Book with ${id} was not found`,
-        HttpStatus.NOT_FOUND,
-      );
-    });
+    const toUpdate = await this.findBookOrFail(id);
 
     const bookAuthorsIds = book.authors.map(it => it.toString());
     const authorsExistsIds = toUpdate.authors.map(it => it.toString());
 
-    const differenceLeft = authorsExistsIds.filter(
+    const bookAuthors = authorsExistsIds.filter(
       x => !bookAuthorsIds.includes(x),
     );
-    const differenceRight = bookAuthorsIds.filter(
-      x => !authorsExistsIds.includes(x.toString()),
+    const newAuthors = bookAuthorsIds.filter(
+      x => !authorsExistsIds.includes(x),
     );
     const update = { ...toUpdate, ...book };
 
-    if (differenceLeft.length) {
-      const authorsToDelete = await this.checkIfAuthorsExists(differenceLeft);
+    if (bookAuthors.length) {
+      const authorsToDelete = await this.checkIfAuthorsExists(bookAuthors);
       await this.deleteBooksFromAuthor(authorsToDelete, id);
     }
     const bookToReturn = await this.bookRepository.save(update);
 
-    if (differenceRight.length) {
-      const authorToUpdate = await this.checkIfAuthorsExists(differenceRight);
-      for (const author of authorToUpdate) {
-        const authorToUpdate = new Author();
-        authorToUpdate.books = author.books
-          ? [bookToReturn.id, ...author.books]
-          : [bookToReturn.id];
-        const update = { ...author, ...authorToUpdate };
-        await this.authorRepository.save(update);
-      }
+    if (newAuthors.length) {
+      const authorToUpdate = await this.checkIfAuthorsExists(newAuthors);
+      await this.updateAuthor(authorToUpdate, bookToReturn.id);
     }
   }
 
@@ -131,6 +132,17 @@ export class BookService {
     return authorsExists;
   }
 
+  async updateAuthor(authors: Author[], bookId: ObjectID) {
+    for (const author of authors) {
+      const authorToUpdate = new Author();
+      authorToUpdate.books = author.books
+        ? [bookId, ...author.books]
+        : [bookId];
+      const update = { ...author, ...authorToUpdate };
+      await this.authorRepository.save(update);
+    }
+  }
+
   async deleteBooksFromAuthor(
     authorsExists: Author[],
     bookToRemoveId: ObjectID,
@@ -143,5 +155,14 @@ export class BookService {
       const update = { ...author, ...authorToUpdate };
       await this.authorRepository.save(update);
     }
+  }
+
+  findBookOrFail(id: string): Promise<Book> {
+    return this.bookRepository.findOneOrFail(id).catch(() => {
+      throw new HttpException(
+        `Book with ${id} was not found`,
+        HttpStatus.BAD_REQUEST,
+      );
+    });
   }
 }

@@ -6,30 +6,35 @@ import {
   ObjectIdColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Max, Min } from 'class-validator';
+import { Exclude, Transform } from 'class-transformer';
+import { Length, IsDateString } from 'class-validator';
 
 @Entity()
 export class Book {
   @ObjectIdColumn()
+  @Transform(value => value.toString(), { toPlainOnly: true })
   id: ObjectID;
 
   @Column()
   title: string;
 
-  @Min(16)
-  @Max(34)
   @Column()
+  @Length(16, 34)
   iban: string;
 
   @Column()
+  @IsDateString()
   publishedAt: Date;
 
+  @Exclude()
   @CreateDateColumn()
   createdAt: Date;
 
+  @Exclude()
   @UpdateDateColumn()
   updatedAt: Date;
 
   @Column()
+  @Transform(value => value.map(it => it.toString()), { toPlainOnly: true })
   authors: ObjectID[];
 }
