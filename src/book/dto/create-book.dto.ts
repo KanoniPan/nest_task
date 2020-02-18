@@ -20,7 +20,7 @@ export class CreateBookDto {
   })
   @IsDate()
   @Type(() => Date)
-  publishedAt: Date;
+  publishedAt: Date | string;
 
   @ApiProperty({
     type: [String],

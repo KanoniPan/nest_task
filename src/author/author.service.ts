@@ -44,6 +44,7 @@ export class AuthorService {
   async update(id: string, author: UpdateAuthorDto): Promise<void> {
     const toUpdate = await this.findAuthorOrFail(id);
     await this.checkIfBooksExist(author.books);
+
     const authorBooksIds = author.books.map(it => it.toString());
     const booksExistIds = toUpdate.books.map(it => it.toString());
 

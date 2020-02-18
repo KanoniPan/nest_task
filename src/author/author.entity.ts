@@ -37,5 +37,5 @@ export class Author {
     default: [],
   })
   @Transform(value => value.map(it => it.toString()), { toPlainOnly: true })
-  books: ObjectID[];
+  books?: ObjectID[];
 }

@@ -83,14 +83,13 @@ export class BookService {
   async remove(id: string): Promise<void> {
     const bookToRemove = await this.findBookOrFail(id);
 
-    const authorExists = await this.checkIfAuthorsExists(bookToRemove.authors);
+    const authorExists = await this.checkIfAuthorsExist(bookToRemove.authors);
     await this.deleteBooksFromAuthor(authorExists, bookToRemove.id);
     await this.bookRepository.delete(id);
   }
 
-  // TODO: - rename differenceLeft, differenceRight
   async update(id: string, book: UpdateBookDto): Promise<void> {
-    await this.checkIfAuthorsExists(book.authors);
+    await this.checkIfAuthorsExist(book.authors);
 
     const toUpdate = await this.findBookOrFail(id);
 
@@ -106,20 +105,18 @@ export class BookService {
     const update = { ...toUpdate, ...book };
 
     if (bookAuthors.length) {
-      const authorsToDelete = await this.checkIfAuthorsExists(bookAuthors);
+      const authorsToDelete = await this.checkIfAuthorsExist(bookAuthors);
       await this.deleteBooksFromAuthor(authorsToDelete, id);
     }
     const bookToReturn = await this.bookRepository.save(update);
 
     if (newAuthors.length) {
-      const authorToUpdate = await this.checkIfAuthorsExists(newAuthors);
+      const authorToUpdate = await this.checkIfAuthorsExist(newAuthors);
       await this.updateAuthor(authorToUpdate, bookToReturn.id);
     }
   }
 
-  async checkIfAuthorsExists(
-    authors: (string | ObjectID)[],
-  ): Promise<Author[]> {
+  async checkIfAuthorsExist(authors: (string | ObjectID)[]): Promise<Author[]> {
     const ids = authors.map(it => new ObjectID(it));
     const authorsExists = await this.authorRepository.findByIds(ids, {});
 

@@ -24,7 +24,7 @@ export class Book {
 
   @Column()
   @IsDateString()
-  publishedAt: Date;
+  publishedAt: Date | string;
 
   @Exclude()
   @CreateDateColumn()
