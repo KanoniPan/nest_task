@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Author } from './author.entity';
@@ -26,7 +26,7 @@ export class AuthorService {
     author.birthday = createAuthorDto.birthday;
     author.firstName = createAuthorDto.firstName;
     author.lastName = createAuthorDto.lastName;
-    author.books = [];
+    author.bookIds = [];
     return this.authorRepository.save(author);
   }
 
@@ -35,24 +35,36 @@ export class AuthorService {
   }
 
   async remove(id: string): Promise<void> {
-    const authorsToRemove = await this.findAuthorOrFail(id);
-    const booksExist = await this.checkIfBooksExist(authorsToRemove.books);
-    await this.deleteAuthorFromBooks(booksExist, authorsToRemove.id);
+    const authorToRemove: Author = await this.findAuthorOrFail(id);
+    const booksExist: Book[] = await this.checkIfBooksExist(
+      authorToRemove.bookIds,
+    );
+    await this.deleteAuthorFromBooks(booksExist, authorToRemove._id);
     await this.authorRepository.delete(id);
   }
 
   async update(id: string, author: UpdateAuthorDto): Promise<void> {
-    const toUpdate = await this.findAuthorOrFail(id);
-    await this.checkIfBooksExist(author.books);
+    const toUpdate: Author = await this.findAuthorOrFail(id);
+    await this.checkIfBooksExist(author.bookIds);
 
-    const authorBooksIds = author.books.map(it => it.toString());
-    const booksExistIds = toUpdate.books.map(it => it.toString());
+    const authorBooksIds: string[] = author.bookIds?.length
+      ? author.bookIds.map(it => it.toString())
+      : [];
+    const booksExistIds: string[] = toUpdate.bookIds?.length
+      ? toUpdate.bookIds.map(it => it.toString())
+      : [];
 
-    const authorBooks = booksExistIds.filter(x => !authorBooksIds.includes(x));
-    const newBooks = authorBooksIds.filter(x => !booksExistIds.includes(x));
+    const authorBooks: string[] = booksExistIds.filter(
+      x => !authorBooksIds.includes(x),
+    );
+    const newBooks: string[] = authorBooksIds.filter(
+      x => !booksExistIds.includes(x),
+    );
 
     if (authorBooks.length) {
-      const authorsDeleteFromBooks = await this.checkIfBooksExist(authorBooks);
+      const authorsDeleteFromBooks: Book[] = await this.checkIfBooksExist(
+        authorBooks,
+      );
       await this.deleteAuthorFromBooks(
         authorsDeleteFromBooks,
         new ObjectID(id),
@@ -60,59 +72,60 @@ export class AuthorService {
     }
 
     if (newBooks.length) {
-      const authorToUpdate = await this.checkIfBooksExist(newBooks);
+      const authorToUpdate: Book[] = await this.checkIfBooksExist(newBooks);
       await this.updateBooks(authorToUpdate, new ObjectID(id));
     }
-    const update = { ...toUpdate, ...author };
+    const update: Author = { ...toUpdate, ...author };
 
     await this.authorRepository.update(id, update);
   }
 
   async findAuthorOrFail(id: string): Promise<Author> {
     return await this.authorRepository.findOneOrFail(id).catch(() => {
-      throw new HttpException(
-        `Author with ${id} was not found`,
-        HttpStatus.NOT_FOUND,
-      );
+      throw new NotFoundException(`Author with ${id} was not found`);
     });
   }
 
-  async deleteAuthorFromBooks(books: Book[], authorToRemoveId: ObjectID) {
+  async deleteAuthorFromBooks(
+    books: Book[],
+    authorToRemoveId: ObjectID,
+  ): Promise<void> {
     for (const book of books) {
       const bookToUpdate = new Book();
-      bookToUpdate.authors = book.authors.filter(
+      bookToUpdate.authorIds = book.authorIds.filter(
         author => !author.equals(authorToRemoveId),
       );
-      const update = { ...book, ...bookToUpdate };
-      if (update.authors.length) {
+      const update: Book = { ...book, ...bookToUpdate };
+      if (update.authorIds.length) {
         await this.bookRepository.save(update);
       } else {
-        await this.bookRepository.delete(book.id.toString());
+        await this.bookRepository.delete(book._id.toString());
       }
     }
   }
 
   async checkIfBooksExist(books: (string | ObjectID)[]): Promise<Book[]> {
-    const ids = books.map(it => new ObjectID(it));
-    const booksExist = await this.bookRepository.findByIds(ids, {});
+    const ids: string[] = books?.length
+      ? books.map(it => new ObjectID(it))
+      : [];
+    const booksExist: Book[] = await this.bookRepository.findByIds(ids, {});
 
     if (ids.length !== booksExist.length) {
-      throw new HttpException(
+      throw new NotFoundException(
         `Check if Books id's are correct and not a duplicate or Books exist`,
-        HttpStatus.NOT_FOUND,
       );
     }
     return booksExist;
   }
 
-  async updateBooks(books: Book[], authorId: ObjectID) {
+  async updateBooks(books: Book[], authorId: ObjectID): Promise<void> {
     for (const book of books) {
       const bookToUpdate = new Book();
-      bookToUpdate.authors = book.authors
-        ? [authorId, ...book.authors]
+      bookToUpdate.authorIds = book.authorIds
+        ? [authorId, ...book.authorIds]
         : [authorId];
-      const update = { ...books, ...bookToUpdate };
-      await this.bookRepository.update(book.id.toString(), update);
+      const update: Book = { ...books, ...bookToUpdate };
+      await this.bookRepository.update(book._id.toString(), update);
     }
   }
 }

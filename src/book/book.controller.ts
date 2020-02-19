@@ -10,7 +10,6 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiQuery } from '@nestjs/swagger';
 import { BookService } from './book.service';
-import { Book } from './book.entity';
 import { CreateBookDto } from './dto/create-book.dto';
 import { UpdateBookDto } from './dto/update-book.dto';
 import { classToPlain } from 'class-transformer';
@@ -26,14 +25,12 @@ export class BookController {
     required: false,
     type: String,
   })
-  findAll(
-    @Query('authorId') id?: string,
-  ): Promise<Record<string, any> | Book[]> {
-    return this.bookService.findAll(id).then(it => classToPlain(it));
+  findAll(@Query('authorId') authorId?: string): Promise<Record<string, any>> {
+    return this.bookService.findAll(authorId).then(it => classToPlain(it));
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<Record<string, any> | Book> {
+  findOne(@Param('id') id: string): Promise<Record<string, any>> {
     return this.bookService.findOne(id).then(it => classToPlain(it));
   }
 

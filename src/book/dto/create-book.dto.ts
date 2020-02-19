@@ -26,5 +26,5 @@ export class CreateBookDto {
     type: [String],
     minItems: 1,
   })
-  authors: string[];
+  authorIds: string[];
 }

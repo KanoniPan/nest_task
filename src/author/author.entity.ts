@@ -13,7 +13,7 @@ import { IsDateString } from 'class-validator';
 export class Author {
   @ObjectIdColumn()
   @Transform(value => value.toString(), { toPlainOnly: true })
-  id: ObjectID;
+  _id: ObjectID;
 
   @Column()
   firstName: string;
@@ -37,5 +37,5 @@ export class Author {
     default: [],
   })
   @Transform(value => value.map(it => it.toString()), { toPlainOnly: true })
-  books?: ObjectID[];
+  bookIds?: (string | ObjectID)[];
 }

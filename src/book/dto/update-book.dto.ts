@@ -31,5 +31,5 @@ export class UpdateBookDto {
     minItems: 1,
   })
   @IsOptional()
-  authors: ObjectID[];
+  authorIds: ObjectID[];
 }

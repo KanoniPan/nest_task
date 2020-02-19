@@ -20,20 +20,20 @@ export class AuthorController {
   constructor(private readonly authorService: AuthorService) {}
 
   @Get()
-  findAll(): Promise<Record<string, any> | Author[]> {
+  findAll(): Promise<Record<string, any>> {
     return this.authorService.findAll().then(it => classToPlain(it));
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string): Promise<Record<string, any> | Author> {
+  findOne(@Param('id') id: string): Promise<Record<string, any>> {
     return this.authorService.findOne(id).then(it => classToPlain(it));
   }
 
   @Post()
-  create(@Body() createAuthorDto: CreateAuthorDto) {
+  create(@Body() createAuthorDto: CreateAuthorDto): Promise<Author> {
     return this.authorService
       .create(createAuthorDto)
-      .then(it => classToPlain(it));
+      .then(it => classToPlain(it) as Author);
   }
 
   @Delete(':id')

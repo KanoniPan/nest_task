@@ -11,21 +11,21 @@ describe('BookController', () => {
   let bookController: BookController;
   let bookService: BookService;
   const book = {
-    id: new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
+    _id: new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
     title: 'test_test',
     iban: 'IBANBANBANBANBAN',
     publishedAt: new Date(),
-    authors: [new ObjectID('5e4bd5dd2a30bc700c8b7e9e')],
+    authorIds: [new ObjectID('5e4bd5dd2a30bc700c8b7e9e')],
     createdAt: new Date(),
     updatedAt: new Date(),
   };
   const books = [
     {
-      id: new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
+      _id: new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
       title: 'test_test',
       iban: 'IBANBANBANBANBAN',
       publishedAt: new Date(),
-      authors: [new ObjectID('5e4bd5dd2a30bc700c8b7e9e')],
+      authorIds: [new ObjectID('5e4bd5dd2a30bc700c8b7e9e')],
       createdAt: new Date(),
       updatedAt: new Date(),
     },
@@ -51,29 +51,25 @@ describe('BookController', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of books', async () => {
-      jest
-        .spyOn(bookService, 'findAll')
-        .mockImplementation(async () => await books);
+    it('should return an array of bookIds', async () => {
+      jest.spyOn(bookService, 'findAll').mockImplementation(async () => books);
 
       const res = books[0];
 
-      res.authors[0] = res.authors[0].toString();
-      res.id = res.id.toString();
+      res.authorIds[0] = res.authorIds[0].toString();
+      res._id = res._id.toString();
       const expected = await bookController.findAll();
 
       expect(JSON.stringify(expected[0])).toBe(JSON.stringify(res));
     });
 
-    it('should return an array of books filtered by Author', async () => {
-      jest
-        .spyOn(bookService, 'findAll')
-        .mockImplementation(async () => await books);
+    it('should return an array of bookIds filtered by Author', async () => {
+      jest.spyOn(bookService, 'findAll').mockImplementation(async () => books);
 
       const res = books[0];
 
-      res.authors[0] = res.authors[0].toString();
-      res.id = res.id.toString();
+      res.authorIds[0] = res.authorIds[0].toString();
+      res._id = res._id.toString();
       const expected = await bookController.findAll('5e4bd5f32a30bc700c8b7ea1');
 
       expect(JSON.stringify(expected[0])).toBe(JSON.stringify(res));
@@ -85,12 +81,10 @@ describe('BookController', () => {
 
   describe('findOne', () => {
     it('should return a book', async () => {
-      jest
-        .spyOn(bookService, 'findOne')
-        .mockImplementation(async () => await book);
+      jest.spyOn(bookService, 'findOne').mockImplementation(async () => book);
 
-      book.authors = book.authors[0].toString();
-      book.id = book.id.toString();
+      book.authorIds = book.authorIds[0].toString();
+      book._id = book._id.toString();
       const expected = await bookController.findOne('5e4bd5f32a30bc700c8b7ea1');
 
       expect(JSON.stringify(expected)).toBe(JSON.stringify(book));
@@ -99,12 +93,10 @@ describe('BookController', () => {
 
   describe('create', () => {
     it('should create a book', async () => {
-      jest
-        .spyOn(bookService, 'create')
-        .mockImplementation(async () => await book);
+      jest.spyOn(bookService, 'create').mockImplementation(async () => book);
 
-      book.authors = book.authors[0].toString();
-      book.id = book.id.toString();
+      book.authorIds = book.authorIds[0].toString();
+      book._id = book._id.toString();
       const expected = await bookController.create(book);
 
       expect(JSON.stringify(expected)).toBe(JSON.stringify(book));
@@ -114,11 +106,11 @@ describe('BookController', () => {
   describe('delete', () => {
     it('should delete a book', async () => {
       jest.spyOn(bookService, 'remove').mockImplementation();
-      const id = '5e4bd5f32a30bc700c8b7ea1';
+      const _id = '5e4bd5f32a30bc700c8b7ea1';
 
-      await bookController.remove(id);
+      await bookController.remove(_id);
 
-      expect(bookService.remove).toHaveBeenCalledWith(id);
+      expect(bookService.remove).toHaveBeenCalledWith(_id);
     });
   });
 
@@ -126,9 +118,9 @@ describe('BookController', () => {
     it('should update an author', async () => {
       jest.spyOn(bookService, 'update').mockImplementation();
 
-      await bookController.update(book.id, book);
+      await bookController.update(book._id, book);
 
-      expect(bookService.update).toHaveBeenCalledWith(book.id, book);
+      expect(bookService.update).toHaveBeenCalledWith(book._id, book);
     });
   });
 });

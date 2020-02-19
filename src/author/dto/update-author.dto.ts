@@ -30,5 +30,5 @@ export class UpdateAuthorDto {
     minItems: 1,
   })
   @IsOptional()
-  books: string[];
+  bookIds: string[];
 }

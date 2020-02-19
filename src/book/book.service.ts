@@ -1,4 +1,8 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Book } from './book.entity';
@@ -6,7 +10,7 @@ import { CreateBookDto } from './dto/create-book.dto';
 import { Author } from '../author/author.entity';
 import { ObjectID } from 'mongodb';
 import { UpdateBookDto } from './dto/update-book.dto';
-import { validate } from 'class-validator';
+import { validate, ValidationError } from 'class-validator';
 
 @Injectable()
 export class BookService {
@@ -19,31 +23,28 @@ export class BookService {
 
   async findAll(id?: string): Promise<Book[]> {
     if (id) {
-      const author = await this.authorRepository.findOneOrFail(id).catch(() => {
-        throw new HttpException(
-          `Author with ${id} was not found`,
-          HttpStatus.NOT_FOUND,
-        );
-      });
+      const author: Author = await this.authorRepository
+        .findOneOrFail(id)
+        .catch(() => {
+          throw new NotFoundException(`Author with ${id} was not found`);
+        });
 
-      const ids = author.books.map(it => new ObjectID(it));
-      const booksToReturn = await this.bookRepository.findByIds(ids);
-
-      return booksToReturn;
+      const ids: string[] = author.bookIds.map(it => new ObjectID(it));
+      return await this.bookRepository.findByIds(ids);
     }
 
     return this.bookRepository.find();
   }
 
   async create(createBookDto: CreateBookDto) {
-    const ids = createBookDto.authors.map(it => new ObjectID(it));
-    const authorsExists = await this.authorRepository.findByIds(ids, {});
+    const ids: ObjectID[] = createBookDto.authorIds.map(it => new ObjectID(it));
+    const authorsExists: Author[] = await this.authorRepository.findByIds(
+      ids,
+      {},
+    );
 
     if (ids.length !== authorsExists.length) {
-      throw new HttpException(
-        `Check if Author id is correct`,
-        HttpStatus.NOT_FOUND,
-      );
+      throw new NotFoundException('Check if Author id is correct');
     }
 
     const book = new Book();
@@ -51,26 +52,23 @@ export class BookService {
     book.title = createBookDto.title;
     book.iban = createBookDto.iban;
     book.publishedAt = createBookDto.publishedAt;
-    book.authors = authorsExists.map(it => it.id);
+    book.authorIds = authorsExists.map(it => it._id);
 
-    const errors = await validate(book);
+    const errors: ValidationError[] = await validate(book);
 
     if (errors.length > 0) {
-      throw new HttpException(
-        errors.map(it => it.constraints),
-        HttpStatus.NOT_FOUND,
-      );
+      throw new NotFoundException(errors.map(it => it.constraints));
     }
 
-    const bookToReturn = await this.bookRepository.save(book);
-    await this.updateAuthor(authorsExists, bookToReturn.id);
+    const bookToReturn: Book = await this.bookRepository.save(book);
+    await this.updateAuthors(authorsExists, bookToReturn._id);
 
     for (const author of authorsExists) {
       const authorToUpdate = new Author();
-      authorToUpdate.books = author.books
-        ? [bookToReturn.id, ...author.books]
-        : [bookToReturn.id];
-      const update = { ...author, ...authorToUpdate };
+      authorToUpdate.bookIds = author.bookIds
+        ? [bookToReturn._id, ...author.bookIds]
+        : [bookToReturn._id];
+      const update: Author = { ...author, ...authorToUpdate };
       await this.authorRepository.save(update);
     }
     return bookToReturn;
@@ -81,61 +79,75 @@ export class BookService {
   }
 
   async remove(id: string): Promise<void> {
-    const bookToRemove = await this.findBookOrFail(id);
+    const bookToRemove: Book = await this.findBookOrFail(id);
 
-    const authorExists = await this.checkIfAuthorsExist(bookToRemove.authors);
-    await this.deleteBooksFromAuthor(authorExists, bookToRemove.id);
+    const authorsExists: Author[] = await this.checkIfAuthorsExist(
+      bookToRemove.authorIds,
+    );
+    await this.deleteBooksFromAuthor(authorsExists, bookToRemove._id);
     await this.bookRepository.delete(id);
   }
 
   async update(id: string, book: UpdateBookDto): Promise<void> {
-    await this.checkIfAuthorsExist(book.authors);
+    await this.checkIfAuthorsExist(book.authorIds);
 
-    const toUpdate = await this.findBookOrFail(id);
+    const toUpdate: Book = await this.findBookOrFail(id);
 
-    const bookAuthorsIds = book.authors.map(it => it.toString());
-    const authorsExistsIds = toUpdate.authors.map(it => it.toString());
+    const bookAuthorsIds: string[] = book.authorIds?.length
+      ? book.authorIds.map(it => it.toString())
+      : [];
+    const authorsExistsIds: string[] = toUpdate.authorIds?.length
+      ? toUpdate.authorIds.map(it => it.toString())
+      : [];
 
-    const bookAuthors = authorsExistsIds.filter(
+    const bookAuthors: string[] = authorsExistsIds.filter(
       x => !bookAuthorsIds.includes(x),
     );
-    const newAuthors = bookAuthorsIds.filter(
+    const newAuthors: string[] = bookAuthorsIds.filter(
       x => !authorsExistsIds.includes(x),
     );
-    const update = { ...toUpdate, ...book };
+    const update: Book = { ...toUpdate, ...book };
 
     if (bookAuthors.length) {
-      const authorsToDelete = await this.checkIfAuthorsExist(bookAuthors);
+      const authorsToDelete: Author[] = await this.checkIfAuthorsExist(
+        bookAuthors,
+      );
       await this.deleteBooksFromAuthor(authorsToDelete, id);
     }
-    const bookToReturn = await this.bookRepository.save(update);
+    const bookToReturn: Book = await this.bookRepository.save(update);
 
     if (newAuthors.length) {
-      const authorToUpdate = await this.checkIfAuthorsExist(newAuthors);
-      await this.updateAuthor(authorToUpdate, bookToReturn.id);
+      const authorsToUpdate: Author[] = await this.checkIfAuthorsExist(
+        newAuthors,
+      );
+      await this.updateAuthors(authorsToUpdate, bookToReturn._id);
     }
   }
 
   async checkIfAuthorsExist(authors: (string | ObjectID)[]): Promise<Author[]> {
-    const ids = authors.map(it => new ObjectID(it));
-    const authorsExists = await this.authorRepository.findByIds(ids, {});
+    const ids: string[] = authors?.length
+      ? authors.map(it => new ObjectID(it))
+      : [];
+    const authorsExists: Author[] = await this.authorRepository.findByIds(
+      ids,
+      {},
+    );
 
     if (ids.length !== authorsExists.length) {
-      throw new HttpException(
-        `Check if Author id is correct or it is not a duplicate`,
-        HttpStatus.NOT_FOUND,
+      throw new NotFoundException(
+        'Check if Author id is correct or it is not a duplicate',
       );
     }
     return authorsExists;
   }
 
-  async updateAuthor(authors: Author[], bookId: ObjectID) {
+  async updateAuthors(authors: Author[], bookId: ObjectID) {
     for (const author of authors) {
       const authorToUpdate = new Author();
-      authorToUpdate.books = author.books
-        ? [bookId, ...author.books]
+      authorToUpdate.bookIds = author.bookIds
+        ? [bookId, ...author.bookIds]
         : [bookId];
-      const update = { ...author, ...authorToUpdate };
+      const update: Author = { ...author, ...authorToUpdate };
       await this.authorRepository.save(update);
     }
   }
@@ -146,20 +158,17 @@ export class BookService {
   ) {
     for (const author of authorsExists) {
       const authorToUpdate = new Author();
-      authorToUpdate.books = author.books.filter(
-        book => !book.equals(bookToRemoveId),
+      authorToUpdate.bookIds = author.bookIds.filter(
+        (book: ObjectID) => !book.equals(bookToRemoveId),
       );
-      const update = { ...author, ...authorToUpdate };
+      const update: Author = { ...author, ...authorToUpdate };
       await this.authorRepository.save(update);
     }
   }
 
-  findBookOrFail(id: string): Promise<Book> {
+  async findBookOrFail(id: string): Promise<Book> {
     return this.bookRepository.findOneOrFail(id).catch(() => {
-      throw new HttpException(
-        `Book with ${id} was not found`,
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new BadRequestException(`Book with ${id} was not found`);
     });
   }
 }

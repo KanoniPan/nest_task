@@ -5,7 +5,7 @@ import { ObjectID } from 'mongodb';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Book } from '../book/book.entity';
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 
 describe('AuthorService', () => {
   let authorService: AuthorService;
@@ -13,30 +13,30 @@ describe('AuthorService', () => {
   let bookRepository: Repository<Book>;
   const books = [
     {
-      id: new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
+      _id: new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
       title: 'test_test',
       iban: 'IBANBANBANBANBAN',
       publishedAt: new Date(),
-      authors: [new ObjectID('5e4bd5dc2a30bc700c8b7e9d')],
+      authorIds: [new ObjectID('5e4bd5dc2a30bc700c8b7e9d')],
       createdAt: new Date(),
       updatedAt: new Date(),
     },
     {
-      id: new ObjectID('5e4bd5f32a30bc700c8b7ea2'),
+      _id: new ObjectID('5e4bd5f32a30bc700c8b7ea2'),
       title: 'test_test',
       iban: 'IBANBANBANBANBAN',
       publishedAt: new Date(),
-      authors: [new ObjectID('5e4bd5dc2a30bc700c8b7e9d')],
+      authorIds: [new ObjectID('5e4bd5dc2a30bc700c8b7e9d')],
       createdAt: new Date(),
       updatedAt: new Date(),
     },
   ];
   const author = {
-    id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
+    _id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
     firstName: 'string',
     lastName: 'string',
     birthday: new Date(),
-    books: [
+    bookIds: [
       new ObjectID('5e4bd5f32a30bc700c8b7ea2'),
       new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
     ],
@@ -67,14 +67,14 @@ describe('AuthorService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of authors', async () => {
+    it('should return an array of authorIds', async () => {
       const result = [
         {
-          id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
+          _id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
           firstName: 'string',
           lastName: 'string',
           birthday: new Date(),
-          books: [new ObjectID('5e4be36c48962b7312b2118d')],
+          bookIds: [new ObjectID('5e4be36c48962b7312b2118d')],
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -85,8 +85,8 @@ describe('AuthorService', () => {
 
       const res = result[0];
 
-      res.books[0] = res.books[0].toString();
-      res.id = res.id.toString();
+      res.bookIds[0] = res.bookIds[0].toString();
+      res._id = res._id.toString();
       await authorService.findAll();
       const expected = await authorRepository.find();
       expect(JSON.stringify(expected[0])).toBe(JSON.stringify(res));
@@ -97,11 +97,11 @@ describe('AuthorService', () => {
   describe('create', () => {
     it('should create author', async () => {
       const result = {
-        id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
+        _id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
         firstName: 'string',
         lastName: 'string',
         birthday: new Date(),
-        books: [],
+        bookIds: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -110,7 +110,7 @@ describe('AuthorService', () => {
         .mockImplementation(async () => await result);
 
       const res = result;
-      res.id = res.id.toString();
+      res._id = res._id.toString();
 
       const expected = await authorService.create(res);
       expect(expected).toBe(res);
@@ -120,11 +120,11 @@ describe('AuthorService', () => {
   describe('findOne', () => {
     it('should return an author', async () => {
       const result = {
-        id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
+        _id: new ObjectID('5e4bd5dc2a30bc700c8b7e9d'),
         firstName: 'string',
         lastName: 'string',
         birthday: new Date(),
-        books: [new ObjectID('5e4be36c48962b7312b2118d')],
+        bookIds: [new ObjectID('5e4be36c48962b7312b2118d')],
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -132,12 +132,12 @@ describe('AuthorService', () => {
         .spyOn(authorRepository, 'findOneOrFail')
         .mockImplementation(async () => await result);
 
-      result.books[0] = result.books[0].toString();
-      result.id = result.id.toString();
-      await authorService.findOne(result.id);
-      const expected = await authorRepository.findOneOrFail(result.id);
+      result.bookIds[0] = result.bookIds[0].toString();
+      result._id = result._id.toString();
+      await authorService.findOne(result._id);
+      const expected = await authorRepository.findOneOrFail(result._id);
       expect(JSON.stringify(expected)).toBe(JSON.stringify(result));
-      expect(authorRepository.findOneOrFail).toHaveBeenCalledWith(result.id);
+      expect(authorRepository.findOneOrFail).toHaveBeenCalledWith(result._id);
     });
   });
 
@@ -146,10 +146,10 @@ describe('AuthorService', () => {
       jest.spyOn(authorRepository, 'delete').mockImplementation();
       jest
         .spyOn(authorService, 'findAuthorOrFail')
-        .mockImplementation(async () => await author);
+        .mockImplementation(async () => author);
       jest
         .spyOn(authorService, 'checkIfBooksExist')
-        .mockImplementation(async () => await books);
+        .mockImplementation(async () => books);
       jest.spyOn(authorService, 'deleteAuthorFromBooks').mockImplementation();
       jest.spyOn(authorRepository, 'delete').mockImplementation();
 
@@ -159,50 +159,50 @@ describe('AuthorService', () => {
         '5e4bd5dc2a30bc700c8b7e9d',
       );
       expect(authorService.checkIfBooksExist).toHaveBeenCalledWith(
-        author.books,
+        author.bookIds,
       );
       expect(authorService.deleteAuthorFromBooks).toHaveBeenCalledWith(
         books,
-        author.id,
+        author._id,
       );
       expect(authorRepository.delete).toHaveBeenCalledWith(
-        author.id.toString(),
+        author._id.toString(),
       );
     });
   });
 
   describe('deleteAuthorFromBooks', () => {
-    it('should remove an author from books and authors length is >= 1', async () => {
+    it('should remove an author from bookIds and authorIds length is >= 1', async () => {
       const authorId = new ObjectID('5e4bd5dc2a30bc700c8b7e9e');
 
       jest.spyOn(bookRepository, 'save').mockImplementation();
       await authorService.deleteAuthorFromBooks(books, authorId);
 
-      await expect(bookRepository.save).toHaveBeenCalled();
+      expect(bookRepository.save).toHaveBeenCalled();
     });
 
-    it('should remove an author from books and authors length is 0', async () => {
+    it('should remove an author from bookIds and authorIds length is 0', async () => {
       const authorId = new ObjectID('5e4bd5dc2a30bc700c8b7e9d');
 
       jest.spyOn(bookRepository, 'delete').mockImplementation();
       await authorService.deleteAuthorFromBooks(books, authorId);
 
-      await expect(bookRepository.delete).toHaveBeenCalled();
+      expect(bookRepository.delete).toHaveBeenCalled();
     });
   });
 
   describe('checkIfBooksExist', () => {
-    it('should check If books exist', async () => {
+    it('should check If bookIds exist', async () => {
       const booksIds = ['5e4bd5f32a30bc700c8b7ea1', '5e4bd5f32a30bc700c8b7ea2'];
 
       jest
         .spyOn(bookRepository, 'findByIds')
-        .mockImplementation(async () => await books);
+        .mockImplementation(async () => books);
 
       const expected = await authorService.checkIfBooksExist(booksIds);
 
-      await expect(bookRepository.findByIds).toHaveBeenCalled();
-      await expect(expected).toBe(books);
+      expect(bookRepository.findByIds).toHaveBeenCalled();
+      expect(expected).toBe(books);
     });
 
     it('should throw HttpException, because book does not exist', async () => {
@@ -210,17 +210,16 @@ describe('AuthorService', () => {
 
       jest
         .spyOn(bookRepository, 'findByIds')
-        .mockImplementation(async () => await books);
+        .mockImplementation(async () => books);
 
       try {
         await authorService.checkIfBooksExist(booksIds);
-        await expect(bookRepository.findByIds).toHaveBeenCalled();
+        expect(bookRepository.findByIds).toHaveBeenCalled();
       } catch (e) {
-        await expect(e).toEqual(
-          new HttpException(
+        expect(e.message).toEqual(
+          new NotFoundException(
             `Check if Books id's are correct and not a duplicate or Books exist`,
-            HttpStatus.NOT_FOUND,
-          ),
+          ).message,
         );
       }
     });
@@ -234,7 +233,7 @@ describe('AuthorService', () => {
 
       await authorService.updateBooks(books, authorId);
 
-      await expect(bookRepository.update).toHaveBeenCalled();
+      expect(bookRepository.update).toHaveBeenCalled();
     });
   });
 
@@ -242,11 +241,11 @@ describe('AuthorService', () => {
     it('should find author', async () => {
       jest
         .spyOn(authorRepository, 'findOneOrFail')
-        .mockImplementation(async () => await author);
+        .mockImplementation(async () => author);
 
-      const expected = await authorService.findAuthorOrFail(author.id);
+      const expected = await authorService.findAuthorOrFail(author._id);
 
-      await expect(expected).toEqual(author);
+      expect(expected).toEqual(author);
     });
 
     it('should throw error if author does not exist', async () => {
@@ -259,23 +258,21 @@ describe('AuthorService', () => {
       try {
         await authorService.findAuthorOrFail(authorId);
       } catch (e) {
-        await expect(e).toEqual(
-          new HttpException(
-            `Author with ${authorId} was not found`,
-            HttpStatus.NOT_FOUND,
-          ),
+        expect(e.message).toEqual(
+          new NotFoundException(`Author with ${authorId} was not found`)
+            .message,
         );
       }
     });
   });
 
   describe('update', () => {
-    it('should update only author itself without books', async () => {
+    it('should update only author itself without bookIds', async () => {
       const authorUpdateFields = {
         firstName: 'test',
         lastName: 'test',
         birthday: new Date('February 18, 2020'),
-        books: [
+        bookIds: [
           new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
           new ObjectID('5e4bd5f32a30bc700c8b7ea2'),
         ],
@@ -283,26 +280,26 @@ describe('AuthorService', () => {
 
       jest
         .spyOn(authorRepository, 'findOneOrFail')
-        .mockImplementation(async () => await author);
+        .mockImplementation(async () => author);
 
       jest
         .spyOn(authorService, 'checkIfBooksExist')
-        .mockImplementation(async () => await books);
+        .mockImplementation(async () => books);
 
       jest.spyOn(authorRepository, 'update').mockImplementation();
 
-      await authorService.update(author.id, authorUpdateFields);
+      await authorService.update(author._id, authorUpdateFields);
 
       expect(authorRepository.update).toHaveBeenCalled();
     });
   });
 
-  it('should update author and add itself to books he belongs to', async () => {
+  it('should update author and add itself to bookIds he belongs to', async () => {
     const authorUpdateFields = {
       firstName: 'test',
       lastName: 'test',
       birthday: new Date('February 18, 2020'),
-      books: [
+      bookIds: [
         new ObjectID('5e4bd5f32a30bc700c8b7ea1'),
         new ObjectID('5e4bd5f32a30bc700c8b7ea2'),
         new ObjectID('5e4bd5f32a30bc700c8b7ea3'),
@@ -311,27 +308,27 @@ describe('AuthorService', () => {
 
     jest
       .spyOn(authorRepository, 'findOneOrFail')
-      .mockImplementation(async () => await author);
+      .mockImplementation(async () => author);
 
     jest
       .spyOn(authorService, 'checkIfBooksExist')
-      .mockImplementation(async () => await books);
+      .mockImplementation(async () => books);
     jest.spyOn(bookRepository, 'delete').mockImplementation();
     jest.spyOn(bookRepository, 'update').mockImplementation();
 
     jest.spyOn(authorRepository, 'update').mockImplementation();
 
-    await authorService.update(author.id, authorUpdateFields);
+    await authorService.update(author._id, authorUpdateFields);
 
     expect(authorRepository.update).toHaveBeenCalled();
   });
 
-  it('should delete himself from books he does not belong', async () => {
+  it('should delete himself from bookIds he does not belong', async () => {
     const authorUpdateFields = {
       firstName: 'test',
       lastName: 'test',
       birthday: new Date('February 18, 2020'),
-      books: [
+      bookIds: [
         new ObjectID('5e4bd5f32a30bc700c8b7ea2'),
         new ObjectID('5e4bd5f32a30bc700c8b7ea3'),
       ],
@@ -339,17 +336,17 @@ describe('AuthorService', () => {
 
     jest
       .spyOn(authorRepository, 'findOneOrFail')
-      .mockImplementation(async () => await author);
+      .mockImplementation(async () => author);
 
     jest
       .spyOn(authorService, 'checkIfBooksExist')
-      .mockImplementation(async () => await books);
+      .mockImplementation(async () => books);
     jest.spyOn(bookRepository, 'delete').mockImplementation();
     jest.spyOn(bookRepository, 'update').mockImplementation();
 
     jest.spyOn(authorRepository, 'update').mockImplementation();
 
-    await authorService.update(author.id, authorUpdateFields);
+    await authorService.update(author._id, authorUpdateFields);
 
     expect(authorRepository.update).toHaveBeenCalled();
   });
